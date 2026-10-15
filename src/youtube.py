@@ -16,7 +16,7 @@ class YouTube:
         channels = self.api.channels().list(part='id', mine=True).execute(num_retries=3).get('items', [])
         if len(channels) != 1 or channels[0]['id'] != required('YOUTUBE_CHANNEL_ID'):
             raise ValueError('OAuth channel does not match YOUTUBE_CHANNEL_ID. Authorize the correct channel.')
-    def upload(self, name, job_id, path, content_kind="birthday"):
+    def upload(self, name, job_id, path, content_kind="birthday", visual_style="cartoon"):
         from .content import metadata
         privacy = os.getenv('YOUTUBE_PRIVACY', 'private')
         if privacy not in ('private', 'unlisted', 'public'):
@@ -24,7 +24,7 @@ class YouTube:
         made_for_kids = os.getenv('MADE_FOR_KIDS', '')
         if made_for_kids not in ('true', 'false'):
             raise ValueError('Set MADE_FOR_KIDS to true or false based on your actual intended audience.')
-        snippet = metadata(content_kind, name)
+        snippet = metadata(content_kind, name, visual_style)
         snippet['description'] += f'\n\nReference: {job_id}'
         snippet.update(defaultLanguage='en', defaultAudioLanguage='en')
         body = {'snippet': snippet, 'status': {'privacyStatus': privacy,

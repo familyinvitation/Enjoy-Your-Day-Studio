@@ -1,4 +1,8 @@
-Name,Status,YouTube URL,Uploaded Date,Job ID,Updated At,Error,Type,Duration Seconds
-Amit,Pending,,,,,,birthday,
-Gentle Rain,Pending,,,,,,rain,60
-Peaceful Moments,Pending,,,,,,music,60
+Name,Status,YouTube URL,Uploaded Date,Job ID,Updated At,Error,Type,Duration Seconds,Style
+Amit,Pending,,,,,,birthday,,
+Gentle Rain,Pending,,,,,,rain,60,
+Peaceful Moments,Pending,,,,,,music,60,
+cat,Pending,,,,,,animal,30,cartoon
+dog,Pending,,,,,,animal,30,pastel
+bird,Pending,,,,,,animal,30,neon
+fish,Pending,,,,,,animal,30,silhouette

@@ -17,7 +17,7 @@ class ContentTests(unittest.TestCase):
     def test_ambience_queue_has_no_voice(self):
         for kind in ('rain','music'):
             sheet=FakeSheet([['Gentle Moments','Pending','','','job-1','','',kind,'10']])
-            with patch.object(main,'credentials'),patch.object(main,'Sheet',return_value=sheet), \
+            with patch.object(main,'credentials'),patch.object(main,'CsvQueue',return_value=sheet), \
                  patch.object(main,'create_voice') as voice,patch.object(main,'render') as birthday, \
                  patch.object(main,'render_ambience') as ambience,patch.object(main,'create_thumbnail'), \
                  patch.object(main,'YouTube') as youtube:

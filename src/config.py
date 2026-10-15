@@ -11,8 +11,7 @@ def required(key):
 def credentials():
     return service_account.Credentials.from_service_account_info(
         json.loads(required('GOOGLE_SERVICE_ACCOUNT_JSON')),
-        scopes=['https://www.googleapis.com/auth/spreadsheets',
-                'https://www.googleapis.com/auth/cloud-platform'])
+        scopes=['https://www.googleapis.com/auth/cloud-platform'])
 
 def validate_name(name):
     name = ' '.join(name.split())

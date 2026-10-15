@@ -1,67 +1,44 @@
-# Enjoy Your Day Studio — multi-format update
+# Enjoy Your Day Studio — GitHub CSV edition
 
-**Celebrate. Relax. Enjoy Your Day.**
+Celebrate. Relax. Enjoy Your Day.
 
-This update supports personalized birthday Shorts, synthesized rain ambience and original gentle instrumental videos in the same automatic queue. Purple, coral and turquoise artwork matches the latest channel direction.
+Edit names-template.csv on GitHub → workflow generates video and thumbnail → uploads to your YouTube channel → commits status and URL to the CSV. No Google Sheet or Google Sheets API is used.
 
-## Updated Sheet (existing birthday rows still work)
+## 1. Replace files in GitHub
 
-Keep columns A–G exactly as before. Add optional column H named `Type` and column I named `Duration Seconds`.
+Upload this project's CONTENTS to your repository root, including `.github/workflows/birthday-upload.yml`. Keep your existing queue data: do not overwrite completed rows with the supplied sample CSV. Remove the old `src/sheet.py` file if it remains in your repository; it is no longer used. Use only this workflow against the queue.
 
-| Name (A) | Status (B) | Type (H) | Duration Seconds (I) |
-|---|---|---|---|
-| Amit | Pending | birthday | blank |
-| Gentle Rain | Pending | rain | 60 |
-| Peaceful Moments | Pending | music | 60 |
+## 2. Edit names-template.csv
 
-Leave C–G for automation. Blank Type means birthday, so your existing name sheet still works. Rain/music labels become the video title; they are not spoken. Use 10–600 seconds for rain/music (default 60). Birthday videos remain short vertical videos with English female narration; ambience videos are landscape 1280×720 with animated illustrated scenes and no narration. The code generates both audio and artwork locally for rain/music; it does not download recordings or produce AI music. Rain is filtered synthetic noise; music is a simple original procedural instrumental, not a commercial-quality song generator.
+The exact columns are:
 
-Each type receives its own title, description, tags and personalized thumbnail. The same automatic upload, Sheet status, preview mode and thumbnail recovery apply. No new secrets are needed. Preview uses the requested duration too. Start with 10–60 seconds before rendering longer videos. Long-form hours-long videos are outside this starter version.
+Name,Status,YouTube URL,Uploaded Date,Job ID,Updated At,Error,Type,Duration Seconds,Style
 
-## Upgrade on GitHub
+The first seven columns are required; Type, Duration Seconds and Style are optional for legacy birthday-only CSVs. Leave automated columns C–G empty for new requests.
 
-1. Replace the previous project files with this version, including `.github/workflows/birthday-upload.yml`.
-2. Preserve your existing Secrets and Variables. Add H/I to the Sheet only when you need the new formats.
-3. Run Actions manually with preview checked. Download the MP4/JPG artifacts and listen to each audio type.
-4. Run with preview unchecked when ready; scheduled jobs continue automatically when UPLOADS_ENABLED=true.
+```csv
+Name,Status,YouTube URL,Uploaded Date,Job ID,Updated At,Error,Type,Duration Seconds,Style
+Amit,Pending,,,,,,birthday,,
+Gentle Rain,Pending,,,,,,rain,60,
+Peaceful Moments,Pending,,,,,,music,60,
+cat,Pending,,,,,,animal,30,cartoon
+dog,Pending,,,,,,animal,30,pastel
+```
 
-The generated profile and banner are included under `assets/branding` for reference/manual channel setup. This project does not change your channel profile, banner or description through the API. Set those in YouTube Studio. No playlist creation is performed automatically.
+Open the file on GitHub → pencil icon (Edit) → append a row → Commit changes to the default branch. Do not remove completed rows. Do not edit the queue while a run is processing it. If you do, conditional writes protect your edits, but the workflow will stop and may require recovery.
 
-# Enjoy Your Day Studio
+Birthday: short vertical video with English female narration. Rain/music: landscape illustrated animation, no narration; 10–600 seconds (default 60). Rain is digitally synthesized noise, not a natural field recording. Music is a simple original procedural instrumental, not a full AI song generator. Public repositories expose queue names and video links; use a private repository if desired.
 
-Google Sheet → hourly GitHub Actions → animated vertical birthday video with English female narration → YouTube upload + personalized thumbnail → Sheet updated.
+## 3. Enable the remaining Google APIs
 
-Birthday format includes original procedural cake, balloons and confetti, four palettes and four spoken wishes. Outputs 1080×1920 MP4 at 24 fps, approximately 12–20 seconds. No external pictures are required. The generated background melody is original; no downloaded songs are used. These modest variations do not guarantee YouTube monetization eligibility.
+Create/select your project at https://console.cloud.google.com/ and enable:
 
-## 1. Upload the project to GitHub
+- YouTube Data API v3 for uploading.
+- Cloud Text-to-Speech API for female birthday narration (billing may be required).
 
-Create `enjoy-your-day-studio` (a private repository is recommended). Extract this ZIP and upload the CONTENTS of the project folder into the repository root. Ensure `.github/workflows/birthday-upload.yml` is included. GitHub's web upload may omit hidden folders on your computer; use Add file → Create new file and paste the workflow using that full path if needed. Commit to your default branch.
+Google Sheets API is NOT required. You can ignore the previous Sheet setup and sharing steps.
 
-## 2. Create the Google Sheet
-
-Create a spreadsheet and rename the first tab `Names`. Import `names-template.csv`, or put these EXACT headers in row 1, columns A–G:
-
-| A | B | C | D | E | F | G |
-|---|---|---|---|---|---|---|
-| Name | Status | YouTube URL | Uploaded Date | Job ID | Updated At | Error |
-
-Add each name on its own row. Set Status to `Pending`, or leave it blank. Keep the other columns empty. The same name on two different rows deliberately creates two videos; deduplication is per row, not per name.
-
-While a workflow is running, only append new names at the bottom. Do not sort, insert, delete, or edit existing queue rows: the queue uses row positions. Use only one repository/workflow against this Sheet. GitHub concurrency prevents overlapping runs within this repository, not external workers.
-
-Copy the spreadsheet ID from the URL between `/d/` and `/edit`.
-
-## 3. Google Cloud setup
-
-At https://console.cloud.google.com/ create a project. Enable:
-
-- Google Sheets API
-- YouTube Data API v3
-- Cloud Text-to-Speech API
-
-Enable billing for Text-to-Speech and set a budget alert. Usage may incur charges; GitHub Actions usage may also incur charges based on your plan.
-
-Under IAM & Admin → Service Accounts, create an account for the automation. Grant the Text-to-Speech User role (or the documented equivalent for your project). Create/download a JSON key. Share the Google Sheet with the JSON's `client_email`, giving Editor access. Do not make the Sheet public.
+Create a Google service account with permission to use Text-to-Speech in the project and download its JSON key. This key is only for narration. Rain/music runs do not load it. Never commit credentials. GitHub Actions and speech synthesis may incur usage charges.
 
 ## 4. Authorize YouTube once
 
@@ -78,90 +55,85 @@ Replace `client_secret.json` with the downloaded filename. Sign in and select th
 
 For unattended operation, move the OAuth app from Testing to Production when appropriate and reauthorize. External apps in Testing generally have seven-day refresh tokens for these scopes. Production status is separate from OAuth verification and YouTube's API compliance audit. Tokens can still expire or be revoked; if authentication fails, authorize again and replace the secret.
 
-## 5. GitHub Secrets
 
-Repository → Settings → Secrets and variables → Actions → Secrets → New repository secret:
+## 5. Add GitHub Secrets and Variables
+
+Settings → Secrets and variables → Actions → Secrets:
 
 | Secret | Value |
 |---|---|
-| GOOGLE_SERVICE_ACCOUNT_JSON | Entire service-account JSON file |
-| GOOGLE_SHEET_ID | Spreadsheet ID |
-| YOUTUBE_CLIENT_ID | Corresponding value in youtube-token.json |
-| YOUTUBE_CLIENT_SECRET | Corresponding value in youtube-token.json |
-| YOUTUBE_REFRESH_TOKEN | Corresponding value in youtube-token.json |
-| YOUTUBE_CHANNEL_ID | Corresponding value in youtube-token.json |
+| GOOGLE_SERVICE_ACCOUNT_JSON | Complete service-account JSON, birthday voice only |
+| YOUTUBE_CLIENT_ID | From the authorization JSON |
+| YOUTUBE_CLIENT_SECRET | From the authorization JSON |
+| YOUTUBE_REFRESH_TOKEN | From the authorization JSON |
+| YOUTUBE_CHANNEL_ID | From the authorization JSON |
 
-Never upload either JSON credential file to GitHub or paste credentials into chat. `.gitignore` protects ordinary git commits, but cannot prevent manual web uploads. Revoke and replace exposed credentials immediately.
+GOOGLE_SHEET_ID is not needed; delete it if you wish. Do not add a personal GitHub access token. GitHub automatically provides the workflow's temporary GITHUB_TOKEN.
 
-Under the Variables tab, create:
+Variables:
 
-| Variable | Initial value |
+| Variable | Value |
 |---|---|
-| UPLOADS_ENABLED | false |
-| YOUTUBE_PRIVACY | private |
-| MADE_FOR_KIDS | true or false, based on the actual intended audience |
+| UPLOADS_ENABLED | false initially, then true |
+| YOUTUBE_PRIVACY | private initially; public when ready |
+| MADE_FOR_KIDS | true or false according to your actual intended audience |
 
-Birthday visuals alone do not decide whether content is made for kids. You must set the accurate audience classification yourself. The workflow refuses uploads if it is unset.
+Under Settings → Actions → General → Workflow permissions, allow Read and write permissions if your repository allows it. The workflow declares contents: write to update the CSV. Organization policies or branch protection may block direct commits; this workflow requires bot commits to the default branch. If blocked, use a repository where this permission is allowed. The program refuses to upload until it can persist the Processing and Uploading states.
 
-## 6. Preview test
+## 6. Preview and activate
 
-GitHub → Actions → Enjoy Your Day Studio videos → Run workflow. Leave `preview` checked. It reads up to three Pending names and generates videos WITHOUT uploading or changing the Sheet. Text-to-Speech usage is still billed. Open the finished run and download `birthday-previews` under Artifacts to watch the MP4 files and inspect the personalized JPG thumbnails.
+Actions → Enjoy Your Day Studio videos → Run workflow → leave preview checked. Download MP4/JPG preview artifacts from the finished run. Preview reads the CSV but does not modify it or upload to YouTube. Birthday preview still uses Text-to-Speech.
 
-## 7. Upload test and automatic operation
+Then set UPLOADS_ENABLED=true and manually run with preview unchecked. Confirm private video URLs appear in the repository's CSV. The file visible in the workflow checkout may be older: refresh the CSV on GitHub to see API commits.
 
-Set `UPLOADS_ENABLED=true`. Run workflow manually with `preview` unchecked. The videos upload as private by default, and URLs appear in the Sheet. `Uploaded` means YouTube accepted the upload; processing and visibility may take additional time.
+The workflow also runs on user commits to names-template.csv and hourly at minute 17, on the default branch only. Its own status commits use GITHUB_TOKEN, so they do not trigger a workflow loop. Scheduled jobs can be delayed and public repository schedules may be disabled after 60 days of inactivity. Maximum three new videos and three thumbnail retries per run. You can edit MAX_PER_RUN in the workflow (1–10).
 
-Once ready, set `YOUTUBE_PRIVACY=public` if desired. YouTube may restrict uploads from unverified API projects to private pending a compliance audit; setting public in this code does not override Google's restriction. Check current project eligibility and documentation.
+YouTube may restrict public uploads or Shorts thumbnails based on API project/channel eligibility. Test with your actual account. Setting public does not override YouTube restrictions. This code does not update your channel profile, banner, description or playlists; apply the supplied branding images in YouTube Studio yourself.
 
-The schedule runs at minute 17 of every hour, processing at most three rows. New pending names wait for the next available scheduled run. Scheduled jobs are best effort and may be delayed. They run from the default branch. Public repositories can have schedules disabled after 60 days without repository activity; check Actions if runs stop.
+## Recovery
 
-Daily routine: append names, then look for `Uploaded` and a link. No manual YouTube upload is required after setup.
+Every Processing, Uploading, Uploaded and thumbnail transition is committed immediately to GitHub through the Contents API with a file SHA guard. No end-of-job push is needed. A crash cannot rely on the runner's local disk as durable state.
 
-## Recovery and avoiding duplicates
+- Pending or blank: eligible.
+- Processing: generation started; after a killed run, inspect before resetting to Pending.
+- Uploading / Needs Review: outcome uncertain. Check YouTube Studio and match the description's Reference job ID to column E. If found, save the URL and mark Uploaded. Do not reset blindly.
+- Uploaded: skipped; keeps the YouTube URL.
+- Error: fix generation, billing, credentials or input, then set Pending.
+- Uploaded with Error starting Thumbnail pending:: retry only the thumbnail. Never reset this video to Pending. Clear Error to stop retrying if the channel cannot set custom thumbnails.
 
-| Status | Meaning / action |
-|---|---|
-| Pending or blank | Eligible for next run |
-| Processing | Rendering started; left here after a killed run. Check logs and YouTube before resetting to Pending |
-| Uploading | Upload may be in progress or have succeeded. Do not blindly reset |
-| Uploaded | Accepted by YouTube, skipped on subsequent runs |
-| Error | Pre-upload failure. Fix credentials/API/billing/input, then set Pending |
-| Needs Review | Upload outcome uncertain. Inspect YouTube Studio before retrying |
+If a GitHub write fails or conflicts, the workflow stops. If YouTube accepted the video but saving the URL failed, Uploading remains and blocks duplicate uploads. Inspect Studio and restore the CSV as above. There is no atomic transaction across GitHub and YouTube, so ambiguous outcomes need review.
 
-For Uploading/Needs Review, search YouTube Studio for the birthday title and check the video description's `Reference: JOB-ID` against Sheet column E. If found, fill the URL and set Uploaded. If absent, wait for processing and confirm no upload exists before setting Pending. The job ID is reused on retry. There is no atomic transaction spanning Sheets and YouTube, so this system intentionally blocks ambiguous retries instead of claiming perfect exactly-once delivery.
+## Validation and limitations
 
-API errors are summarized without dumping provider responses or secrets into logs. Check APIs, billing, token validity and permissions when a row fails. A failed row makes the GitHub job fail visibly. Other Pending rows can run next time. If Sheet access fails completely, the workflow stops.
+Run `python -m unittest discover -s tests` and `python -m compileall -q src scripts` from the project folder. Live API upload requires your credentials and repository permissions. No channel has been connected or uploads performed during code creation. Dependencies use compatible version ranges. Keep the CSV below GitHub Contents API's inline-content limit (under 1 MB recommended); archive old completed rows separately if it grows, retaining their upload records.
 
-## Customize
-
-Edit workflow env: `MAX_PER_RUN` (1–10), `TTS_VOICE`, `GOOGLE_SHEET_TAB`. The supplied female voice is `en-US-Neural2-F`. Edit `src/video.py` for palettes, artwork and scripts. Dependencies use compatible ranges; resolve and lock exact versions for long-term reproducibility.
-
-## Validation
-
-```bash
-python -m compileall -q src scripts
-python -m unittest discover -s tests
-```
-
-Real API calls require your credentials. No channel has been connected or videos uploaded as part of creating this project.
-
-## Official references
-
+Official references:
+- https://docs.github.com/en/rest/repos/contents
+- https://docs.github.com/en/actions/concepts/security/github_token
 - https://developers.google.com/youtube/v3/docs/videos/insert
-- https://developers.google.com/identity/protocols/oauth2#expiration
-- https://docs.cloud.google.com/text-to-speech/docs/create-audio-text-client-libraries
-- https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
-
-## Automatic personalized thumbnails
-
-Every new video also gets a 1080×1920 portrait JPEG with HAPPY BIRTHDAY, the name, cake, balloons and matching colors. The thumbnail is created with Pillow inside GitHub Actions, requiring no extra key or image-generation fees. Preview artifacts contain both MP4 and JPG files.
-
-The program first saves the successfully uploaded video's URL in the Sheet, then calls YouTube `thumbnails.set`. The existing `youtube.upload` permission covers this; no new OAuth scope is required.
-
-If thumbnail upload fails, Status stays Uploaded, and Error shows `Thumbnail pending:`. Later runs retry ONLY that thumbnail (up to MAX_PER_RUN thumbnail retries in addition to new videos). They never upload the birthday video again. Fix channel eligibility, permissions or quota before retrying. To stop retrying an unavailable thumbnail, clear its Error cell; do not set that video's Status back to Pending. Existing Uploaded rows without that marker are unchanged. To apply thumbnails to older uploads, fill Job ID if missing and set Error to `Thumbnail pending: requested`.
-
-Custom thumbnail permission must be enabled on the channel. Shorts thumbnail access depends on channel eligibility; YouTube announced a rollout starting with YouTube Partner Program creators. API acceptance/display for your channel must be tested, and a custom thumbnail is not guaranteed to appear on every Shorts surface. The video itself already displays Happy Birthday and the name, even when a custom image is unavailable.
-
-References:
 - https://developers.google.com/youtube/v3/docs/thumbnails/set
-- https://blog.youtube/news-and-events/youtube-studio-custom-thumbnail-updates/
+
+## Animal videos — use now
+
+All four formats run through the same queue: birthday, rain, music, animal.
+
+Add a tenth column J named exactly `Style`. Existing CSVs with seven, eight or nine columns remain supported. When adding Style, use all three optional headers in order: H Type, I Duration Seconds, J Style. Preserve all existing upload records.
+
+| Name (A) | Type (H) | Duration Seconds (I) | Style (J) |
+|---|---|---|---|
+| cat | animal | 30 | cartoon |
+| dog | animal | 30 | pastel |
+| bird | animal | 30 | neon |
+| fish | animal | 30 | silhouette |
+
+Set Status (B) to Pending and leave C–G empty for new requests. Name is the animal species, not a pet's personal name.
+
+Supported species: cat, dog, rabbit, bird, fish, butterfly, elephant, lion. Case is ignored. Unsupported animals fail before upload rather than showing a different animal.
+
+Styles: cartoon (brand colors), pastel (soft light colors), silhouette (dark animal shapes), neon (bright colors on a dark background). Style currently applies only to animal videos; birthday/rain/music retain their existing branded designs. Blank animal Style defaults to cartoon.
+
+Animal videos are landscape 1280×720 illustrated animation at 12 fps, with movement, blinking or wing/tail motion depending on species, original generated instrumental background audio, no narration and no realistic animal sounds. Duration supports 10–600 seconds (default 60). There are no downloaded photos, stock videos, real wildlife clips or AI-generated realistic video in this version. No extra API key is required.
+
+The thumbnail shows the chosen species and style; upload titles and descriptions clearly label the videos as animation. Set MADE_FOR_KIDS accurately for your intended audience; animal cartoons can require a different audience decision than relaxation content. This starter uses one repository-wide setting, so process batches with the appropriate audience setting rather than mixing content that requires different settings.
+
+Run preview first and inspect the animal MP4/JPG files before enabling upload. Files are generated and uploaded automatically only after your YouTube authorization and GitHub permissions are configured.
