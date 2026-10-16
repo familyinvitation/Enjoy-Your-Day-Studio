@@ -15,7 +15,7 @@ class FakeSheet:
 class QueueTests(unittest.TestCase):
     def exercise(self,status='Pending',failure=False,preview=False):
         sheet=FakeSheet([['Amit',status,'','','job-1','','']])
-        with patch.object(main,'credentials'), patch.object(main,'CsvQueue',return_value=sheet), \
+        with patch.object(main,'CsvQueue',return_value=sheet), \
              patch.object(main,'create_voice'),patch.object(main,'render'),patch.object(main,'create_thumbnail'), \
              patch.object(main,'YouTube') as youtube:
             youtube.return_value.upload.return_value='video-123'
@@ -43,7 +43,7 @@ class QueueTests(unittest.TestCase):
             self.assertEqual(count,0)
     def test_thumbnail_failure_retries_without_reupload(self):
         sheet=FakeSheet([['Amit','Pending','','','job-1','','']])
-        with patch.object(main,'credentials'), patch.object(main,'CsvQueue',return_value=sheet), \
+        with patch.object(main,'CsvQueue',return_value=sheet), \
              patch.object(main,'create_voice'),patch.object(main,'render'),patch.object(main,'create_thumbnail'), \
              patch.object(main,'YouTube') as youtube:
             youtube.return_value.upload.return_value='video-123'

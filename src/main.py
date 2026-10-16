@@ -5,7 +5,7 @@ import uuid
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from .config import credentials, validate_name
+from .config import validate_name
 from .csv_queue import CsvQueue, QueueConflict
 from .voice import create_voice
 from .content import content_settings
@@ -45,7 +45,6 @@ def finish_thumbnail(sheet, youtube, number, row):
 
 
 def run(preview=False):
-    creds = None
     sheet = CsvQueue()
     rows = sheet.rows()
     youtube = None if preview else YouTube()
@@ -76,11 +75,9 @@ def run(preview=False):
             with tempfile.TemporaryDirectory() as directory:
                 output=Path('output')/f'{job_id}.mp4' if preview else Path(directory)/'video.mp4'
                 if kind == 'birthday':
-                    if creds is None:
-                        creds = credentials()
                     audio=Path(directory)/'voice.wav'
                     _, message=style(job_id)
-                    create_voice(name,message,audio,creds)
+                    create_voice(name,message,audio)
                     render(name,job_id,audio,output)
                 elif kind == 'animal':
                     render_animal(name.lower(),visual_style,job_id,output,duration)

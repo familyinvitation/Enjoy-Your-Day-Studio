@@ -29,32 +29,25 @@ Open the file on GitHub → pencil icon (Edit) → append a row → Commit chang
 
 Birthday: short vertical video with English female narration. Rain/music: landscape illustrated animation, no narration; 10–600 seconds (default 60). Rain is digitally synthesized noise, not a natural field recording. Music is a simple original procedural instrumental, not a full AI song generator. Public repositories expose queue names and video links; use a private repository if desired.
 
-## 3. Enable the remaining Google APIs
+## 3. Voice generation now uses Piper
 
-Create/select your project at https://console.cloud.google.com/ and enable:
+No Google Cloud Text-to-Speech API, billing account, service account JSON or speech API key is needed. The workflow installs piper-tts 1.8.0 from its published Python package (OHF-Voice/piper1-gpl) and downloads en_US-ljspeech-medium model/config and its model card on the first birthday request. Model files are cached by GitHub Actions; later synthesis runs offline on CPU. Internet is required for installation and initial downloads. No laptop commands are needed. Rain, music and animal formats continue as before.
 
-- YouTube Data API v3 for uploading.
-- Cloud Text-to-Speech API for female birthday narration (billing may be required).
+The chosen model card describes a single-speaker US English female voice trained on the public-domain LJ Speech dataset. The model repository is marked MIT; the maintained engine is GPL-3.0. See THIRD_PARTY_NOTICES.md for upstream sources and terms. This project integrates the installed engine rather than copying the entire upstream repository. Do not remove upstream notices when redistributing upstream code or models. The generated voice is a pretrained narrator, not a clone of your own voice. Test name pronunciation in preview mode.
 
-Google Sheets API is NOT required. You can ignore the previous Sheet setup and sharing steps.
+## 4. Browser-only YouTube authorization
 
-Create a Google service account with permission to use Text-to-Speech in the project and download its JSON key. This key is only for narration. Rain/music runs do not load it. Never commit credentials. GitHub Actions and speech synthesis may incur usage charges.
+If your four YouTube secrets are already saved, keep them; the Piper change does not require reauthorizing YouTube.
 
-## 4. Authorize YouTube once
+For a new setup: enable YouTube Data API v3. In Google Auth Platform create a Web application OAuth client with authorized redirect URI https://developers.google.com/oauthplayground (not JavaScript origins). Add your Google account as a test user if the app is in Testing.
 
-Configure Google Auth Platform / OAuth consent. Choose External if needed; add your own Google account as a test user. Create an OAuth client of type Desktop app; download its JSON.
+Open https://developers.google.com/oauthplayground/ → settings → Server-side flow, Offline access, Consent Screen prompt, Use your own OAuth credentials. Enter your Web client ID and secret. In Step 1 authorize both scopes:
 
-A one-time authorization needs a browser on your own computer; the hourly jobs run entirely on GitHub afterward. On Windows 11, install Python 3.12, then run these commands from the project folder:
+https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly
 
-```powershell
-py -m pip install -r requirements.txt
-py scripts/authorize_youtube.py client_secret.json
-```
+Sign in and select Enjoy Your Day Studio. In Step 2 exchange the authorization code immediately, then save the refresh token directly to GitHub Secrets. Never share tokens, client secrets or screenshots containing them. No local Python authorization is required; scripts/authorize_youtube.py remains an optional local alternative using a Desktop client.
 
-Replace `client_secret.json` with the downloaded filename. Sign in and select the actual Enjoy Your Day Studio channel (including the correct Brand Account if applicable). The script prints the channel name and saves credentials in `youtube-token.json`. It never prints the refresh token.
-
-For unattended operation, move the OAuth app from Testing to Production when appropriate and reauthorize. External apps in Testing generally have seven-day refresh tokens for these scopes. Production status is separate from OAuth verification and YouTube's API compliance audit. Tokens can still expire or be revoked; if authentication fails, authorize again and replace the secret.
-
+External OAuth apps in Testing generally issue seven-day refresh tokens for these scopes. For long-term unattended use, move to Production where appropriate and obtain a new token. OAuth production/verification and YouTube compliance auditing are separate. Revoked tokens need reauthorization.
 
 ## 5. Add GitHub Secrets and Variables
 
@@ -62,13 +55,12 @@ Settings → Secrets and variables → Actions → Secrets:
 
 | Secret | Value |
 |---|---|
-| GOOGLE_SERVICE_ACCOUNT_JSON | Complete service-account JSON, birthday voice only |
 | YOUTUBE_CLIENT_ID | From the authorization JSON |
 | YOUTUBE_CLIENT_SECRET | From the authorization JSON |
 | YOUTUBE_REFRESH_TOKEN | From the authorization JSON |
 | YOUTUBE_CHANNEL_ID | From the authorization JSON |
 
-GOOGLE_SHEET_ID is not needed; delete it if you wish. Do not add a personal GitHub access token. GitHub automatically provides the workflow's temporary GITHUB_TOKEN.
+GOOGLE_SHEET_ID and GOOGLE_SERVICE_ACCOUNT_JSON are not needed; remove them if previously added. Do not add a personal GitHub access token. GitHub automatically provides the workflow's temporary GITHUB_TOKEN.
 
 Variables:
 
@@ -82,7 +74,7 @@ Under Settings → Actions → General → Workflow permissions, allow Read and 
 
 ## 6. Preview and activate
 
-Actions → Enjoy Your Day Studio videos → Run workflow → leave preview checked. Download MP4/JPG preview artifacts from the finished run. Preview reads the CSV but does not modify it or upload to YouTube. Birthday preview still uses Text-to-Speech.
+Actions → Enjoy Your Day Studio videos → Run workflow → leave preview checked. Download MP4/JPG preview artifacts from the finished run. Preview reads the CSV but does not modify it or upload to YouTube. Birthday preview uses Piper on the GitHub runner with no speech API calls.
 
 Then set UPLOADS_ENABLED=true and manually run with preview unchecked. Confirm private video URLs appear in the repository's CSV. The file visible in the workflow checkout may be older: refresh the CSV on GitHub to see API commits.
 
@@ -98,7 +90,7 @@ Every Processing, Uploading, Uploaded and thumbnail transition is committed imme
 - Processing: generation started; after a killed run, inspect before resetting to Pending.
 - Uploading / Needs Review: outcome uncertain. Check YouTube Studio and match the description's Reference job ID to column E. If found, save the URL and mark Uploaded. Do not reset blindly.
 - Uploaded: skipped; keeps the YouTube URL.
-- Error: fix generation, billing, credentials or input, then set Pending.
+- Error: fix generation, voice download, credentials or input, then set Pending.
 - Uploaded with Error starting Thumbnail pending:: retry only the thumbnail. Never reset this video to Pending. Clear Error to stop retrying if the channel cannot set custom thumbnails.
 
 If a GitHub write fails or conflicts, the workflow stops. If YouTube accepted the video but saving the URL failed, Uploading remains and blocks duplicate uploads. Inspect Studio and restore the CSV as above. There is no atomic transaction across GitHub and YouTube, so ambiguous outcomes need review.
@@ -137,3 +129,7 @@ Animal videos are landscape 1280×720 illustrated animation at 12 fps, with move
 The thumbnail shows the chosen species and style; upload titles and descriptions clearly label the videos as animation. Set MADE_FOR_KIDS accurately for your intended audience; animal cartoons can require a different audience decision than relaxation content. This starter uses one repository-wide setting, so process batches with the appropriate audience setting rather than mixing content that requires different settings.
 
 Run preview first and inspect the animal MP4/JPG files before enabling upload. Files are generated and uploaded automatically only after your YouTube authorization and GitHub permissions are configured.
+
+## Upgrade from the previous Google voice edition
+
+Replace src/voice.py, src/main.py, src/config.py, requirements.txt and .github/workflows/birthday-upload.yml (or upload this entire updated project while preserving your CSV data). Keep the four existing YouTube secrets. No Google billing activation is required. Run preview with a single Pending birthday row first, inspect the MP4 narration, then enable uploads. GitHub processing and YouTube quotas still apply; free speech generation does not mean unlimited free hosting or uploads.

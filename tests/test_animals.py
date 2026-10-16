@@ -23,12 +23,12 @@ class AnimalTests(unittest.TestCase):
             self.assertGreater(path.stat().st_size,1000)
     def test_animal_queue_without_voice(self):
         queue=FakeSheet([['Cat','Pending','','','job-1','','','animal','30','neon']])
-        with patch.object(main,'CsvQueue',return_value=queue),patch.object(main,'credentials') as creds, \
+        with patch.object(main,'CsvQueue',return_value=queue),\
              patch.object(main,'render_animal') as render,patch.object(main,'create_thumbnail') as thumbnail, \
              patch.object(main,'YouTube') as youtube:
             youtube.return_value.upload.return_value='abc'
             main.run()
-            creds.assert_not_called();render.assert_called_once()
+            render.assert_called_once()
             self.assertEqual(render.call_args.args[:2],('cat','neon'))
             self.assertEqual(youtube.return_value.upload.call_args.kwargs['content_kind'],'animal')
             self.assertEqual(youtube.return_value.upload.call_args.kwargs['visual_style'],'neon')
