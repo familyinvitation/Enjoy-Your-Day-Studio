@@ -30,8 +30,8 @@ class YouTube:
             sources=path.with_suffix('.sources.json')
             if sources.exists():
                 credits=json.loads(sources.read_text())
-                snippet['description'] += '\n\nFootage credits (Pexels):\n'+'\n'.join(
-                    f"{item['creator']}: {item['url']}" for item in credits)
+                snippet['description'] += '\n\nFootage credits (Coverr):\n'+'\n'.join(
+                    f"{item['creator']}: {item['url']} (video ID: {item.get('id', 'unknown')})" for item in credits)
         snippet['description'] += f'\n\nReference: {job_id}'
         snippet.update(defaultLanguage='en', defaultAudioLanguage='en')
         body = {'snippet': snippet, 'status': {'privacyStatus': privacy,

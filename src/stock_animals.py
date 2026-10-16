@@ -1,4 +1,4 @@
-"""Real animal footage from Pexels, assembled into a branded compilation."""
+"""Real animal footage from Coverr, assembled into a branded compilation."""
 import hashlib
 import json
 import random
@@ -30,31 +30,65 @@ def animal_options(row):
 def select_clips(videos,animal,job_id):
     chosen=[];seen=set()
     for video in videos:
-        words=set(re.findall(r'[a-z]+',(video.get('url','')+' '+video.get('title','')).lower()))
+        # Coverr search can include related subjects: validate species AND activity metadata.
+        tags=video.get('tags',[])
+        tag_text=' '.join(t if isinstance(t,str) else str(t.get('name','')) for t in tags if isinstance(t,(str,dict)))
+        text=' '.join(str(video.get(k,'') or '') for k in ('title','description','slug'))+' '+tag_text
+        words=set(re.findall(r'[a-z]+',text.lower()))
         if not words.intersection(ALIASES[animal]) or not words.intersection(PLAY):continue
-        if video.get('id') in seen:continue
-        seen.add(video.get('id'))
-        files=[f for f in video.get('video_files',[]) if f.get('file_type')=='video/mp4'
-               and 640<=f.get('width',0)<=1920 and f.get('width',0)>=f.get('height',1)]
-        if not files:continue
-        file=min(files,key=lambda f:abs(f['width']-1280))
-        chosen.append({'id':video['id'],'page':video['url'],'creator':video.get('user',{}).get('name','Pexels contributor'),
-                       'download':file['link']})
+        identifier=str(video.get('id',''))
+        if not identifier or identifier in seen or video.get('is_vertical'):continue
+        urls=video.get('urls') or {}
+        download=urls.get('mp4_download')
+        if not isinstance(download,str) or not download:continue
+        if not allowed_media_url(download):continue
+        # Do not include AI-generated footage when an explicit flag identifies it.
+        if video.get('is_ai_generated') or video.get('generation_type') in ('ai','generated'):continue
+        seen.add(identifier)
+        page=video.get('url') or video.get('page_url')
+        if not isinstance(page,str) or urlparse(page).hostname not in ('coverr.co','www.coverr.co'):
+            page='https://coverr.co'
+        else:
+            parsed=urlparse(page)
+            page=parsed._replace(query='',fragment='').geturl()
+        chosen.append({'id':identifier,'page':page,'creator':'Coverr', 'download':download})
     random.Random(job_id).shuffle(chosen)
-    if len(chosen)<2:raise ValueError('Not enough matching active-animal clips; try another animal or preview later')
+    if len(chosen)<2:
+        raise ValueError('Coverr returned fewer than two matching active-animal clips; no fallback video was uploaded')
     return chosen[:8]
 
+def allowed_media_url(url):
+    parsed=urlparse(url)
+    host=parsed.hostname or ''
+    return parsed.scheme=='https' and (host=='coverr.co' or host.endswith('.coverr.co')) and not parsed.username
+
+def coverr_request(query):
+    params=urlencode({'query':query,'page':0,'page_size':40,'urls':'true'})
+    request=Request('https://api.coverr.co/videos?'+params,
+                    headers={'Authorization':'Bearer '+required('COVERR_API_KEY'),'User-Agent':'EnjoyYourDayStudio'})
+    with urlopen(request,timeout=60) as response:
+        data=json.load(response)
+    if not isinstance(data,dict) or not isinstance(data.get('hits'),list):
+        raise ValueError('Unexpected Coverr API response; expected hits list')
+    return data['hits']
+
 def search_clips(animal,job_id):
-    query=urlencode({'query':f'{animal} playing','orientation':'landscape','per_page':40})
-    request=Request('https://api.pexels.com/v1/videos/search?'+query,
-                    headers={'Authorization':required('PEXELS_API_KEY'),'User-Agent':'EnjoyYourDayStudio'})
-    with urlopen(request,timeout=60) as response:data=json.load(response)
-    return select_clips(data.get('videos',[]),animal,job_id)
+    videos=[]
+    # At most three search requests per animal job, with no broad unrelated fallback.
+    queries=[f'{animal} playing',f'{animal} playful',f'{animal} running']
+    for query in queries:
+        videos.extend(coverr_request(query))
+        try:
+            return select_clips(videos,animal,job_id)
+        except ValueError:
+            continue
+    return select_clips(videos,animal,job_id)
 
 def download_clip(url,path):
-    host=urlparse(url).hostname or ''
-    if urlparse(url).scheme!='https' or not (host.endswith('.pexels.com') or host.endswith('.pexelsusercontent.com')):
-        raise ValueError('Unexpected footage download host')
+    if not allowed_media_url(url):
+        raise ValueError('Unexpected Coverr download host')
+    # Use mp4_download directly, as required by Coverr download tracking.
+    # Never pass API authorization to the media CDN or save signed URLs in credits.
     with urlopen(url,timeout=90) as response,path.open('wb') as target:
         total=0
         while True:
@@ -113,5 +147,5 @@ def render_animal(animal,visual_style,job_id,output,duration=30):
             '-movflags','+faststart',str(output)],check=True)
     # Include credits in upload metadata; API key is never written to a file.
     output.with_suffix('.sources.json').write_text(json.dumps([
-        {'creator':clip['creator'],'url':clip['page']} for clip in clips],indent=2))
+        {'creator':clip['creator'],'url':clip['page'],'id':clip['id']} for clip in clips],indent=2))
     return output

@@ -34,7 +34,7 @@ def metadata(kind, label, visual_style='cartoon'):
         category = '24'
     elif kind == 'animal':
         title = f'{label.title()} | Playful Animal Moments | {CHANNEL}'
-        description = f'A compilation of real {label.lower()} footage selected from stock-video search results, edited with gentle instrumental music. Longer requests may repeat clips. Footage courtesy of Pexels and the credited contributors.'
+        description = f'A compilation of real {label.lower()} footage selected from stock-video search results, edited with gentle instrumental music. Longer requests may repeat clips. Footage courtesy of Coverr; source video identifiers are listed below.'
         tags = [label.lower(), 'animal videos', 'playful animals', 'real animals']
         category = '15'
     else:

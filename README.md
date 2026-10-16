@@ -105,22 +105,22 @@ Official references:
 - https://developers.google.com/youtube/v3/docs/videos/insert
 - https://developers.google.com/youtube/v3/docs/thumbnails/set
 
-## Real animal footage — automatic Pexels selection
+## Real animal footage — automatic Coverr selection
 
-The geometric animal renderer has been removed. Animal requests now search Pexels for the selected species playing, select at least two distinct landscape clips whose metadata indicates activity, trim and assemble them with instrumental background music, and create a thumbnail from the actual selected footage. A new GitHub secret PEXELS_API_KEY is required. Obtain it through https://www.pexels.com/api/ and paste it directly into GitHub repository Secrets. Do not share it or commit it.
+The geometric animal renderer has been removed. Animal requests now search Coverr for the selected species playing, select at least two distinct landscape clips whose metadata indicates activity, trim and assemble them with instrumental background music, and create a thumbnail from the actual selected footage. A new GitHub secret COVERR_API_KEY is required. Obtain it through https://coverr.co/developers and paste it directly into GitHub repository Secrets. Do not share it or commit it.
 
 Set Type=animal, Name=cat/dog/rabbit/bird/fish/butterfly/elephant/lion, Style=real, Duration Seconds=30 (10–600 supported). Existing cartoon/pastel/neon/silhouette animal rows also use real footage after this update. They do not fall back to illustrations. If no matching clips or API key are available, the request fails before YouTube upload. Activity matching uses source metadata, not computer vision: swimming/flying/running may be selected, and playing cannot be guaranteed. Preview to check relevance.
 
-Clips are normalized to 1280×720 at 24 fps and assembled with generated music. Source audio is removed; videos are not claimed to contain authentic animal sounds. Requests longer than the assembled footage repeat the compilation. Source contributor names and Pexels links are included in the YouTube description and preview .sources.json artifact. Review Pexels terms and API rules; API limits apply. Using stock clips does not guarantee YouTube monetization eligibility.
+Clips are normalized to 1280×720 at 24 fps and assembled with generated music. Source audio is removed; videos are not claimed to contain authentic animal sounds. Requests longer than the assembled footage repeat the compilation. Source contributor names and Coverr links are included in the YouTube description and preview .sources.json artifact. Review Coverr terms and API rules; API limits apply. Using stock clips does not guarantee YouTube monetization eligibility.
 
 Thumbnail retries use the original selected frame cached in .cache/animal-thumbnails. If it is no longer available, the thumbnail retry fails rather than using a frame from unrelated footage. Apply a thumbnail manually for that already-uploaded video if needed; never reset Uploaded to Pending just to fix a thumbnail.
 
 Keep existing Uploaded rows and links unchanged; this update does not delete or replace videos already on YouTube. To make a replacement video, add a NEW Pending row and manage the old upload manually in YouTube Studio. Start in preview mode. Choose MADE_FOR_KIDS based on the actual target audience; it remains a global setting.
 
 References:
-- https://www.pexels.com/api/documentation/
-- https://help.pexels.com/hc/en-us/articles/360042827333-Can-I-upload-Pexels-images-and-videos-to-YouTube
-- https://www.pexels.com/license/
+- https://coverr.co/developersdocumentation/
+- https://coverr.co/terms
+- https://coverr.co/license
 
 ## Upgrade from the previous Google voice edition
 
@@ -143,3 +143,13 @@ Rain and music now default to 1800 seconds (30 minutes). Column I Duration Secon
 The renderer encodes a short illustrated animation once, loops its visual track, and generates the audio for the full requested duration with opening/closing fades. This reduces encoding time and does not repeat the short clip's faded audio. The visual loop may have a visible reset; this version uses a repeating illustrated scene rather than unique footage throughout. The generated music uses a repeating chord progression; rain remains synthetic noise.
 
 Preview also generates the full requested 30-minute-or-longer video. Workflow batches now process one new video per run, with a 180-minute timeout. GitHub runner/storage quotas and YouTube limits still apply. Your channel must support uploads longer than 15 minutes. Test a private upload first. Previously Uploaded rows are not recreated.
+
+## Coverr upgrade
+
+Save your Coverr key as repository secret COVERR_API_KEY. Replace src/stock_animals.py, src/content.py, src/youtube.py and .github/workflows/birthday-upload.yml, plus README.md and the updated tests (or upload all code while preserving your CSV). PEXELS_API_KEY is no longer used. Birthday/Piper, rain and music do not require Coverr.
+
+This adapter uses Coverr's documented /videos endpoint with Bearer authentication, query/page_size/urls parameters and hits response. Signed mp4_download URLs are used for tracked downloads, and are not written into public source credits. Search is limited to at most three calls per animal job. Your dashboard's Demo allowance is 50 requests/hour; account restrictions and Coverr's current terms still apply. Source availability is not guaranteed.
+
+For a new animal request, use cat,Pending,,,,,,animal,60,real. Keep Uploaded rows unchanged; use a NEW row for a replacement video. If an older unsuccessful request is Error or Paused and has no YouTube URL, set it Pending after fixing setup. Never reset Uploading/Needs Review without checking YouTube Studio first.
+
+Preview first. Metadata filtering checks animal/activity keywords and excludes explicitly flagged AI footage, but cannot prove that the animal is playing or that an unflagged clip is camera footage. Human review is recommended before the first public batch. Missing or unrecognized media fields cause a failure instead of a cartoon fallback. This update has fixture-based API tests; live use of your GitHub secret must be tested in Actions because it is not available in this chat runtime.
