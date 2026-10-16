@@ -6,10 +6,8 @@ from .video import style, PALETTES, centered
 
 def create_thumbnail(name, job_id, path, content_kind='birthday', visual_style='cartoon'):
     if content_kind == 'animal':
-        from .animals import animal_frame
-        path.parent.mkdir(parents=True,exist_ok=True)
-        animal_frame(name.lower(),visual_style).save(path,'JPEG',quality=90,optimize=True)
-        return path
+        from .stock_animals import real_thumbnail
+        return real_thumbnail(name.lower(),job_id,path)
     if content_kind != 'birthday':
         from .ambience import scene
         path.parent.mkdir(parents=True,exist_ok=True)

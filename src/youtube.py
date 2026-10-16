@@ -1,4 +1,5 @@
 import os
+import json
 import httplib2
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -25,6 +26,12 @@ class YouTube:
         if made_for_kids not in ('true', 'false'):
             raise ValueError('Set MADE_FOR_KIDS to true or false based on your actual intended audience.')
         snippet = metadata(content_kind, name, visual_style)
+        if content_kind == 'animal':
+            sources=path.with_suffix('.sources.json')
+            if sources.exists():
+                credits=json.loads(sources.read_text())
+                snippet['description'] += '\n\nFootage credits (Pexels):\n'+'\n'.join(
+                    f"{item['creator']}: {item['url']}" for item in credits)
         snippet['description'] += f'\n\nReference: {job_id}'
         snippet.update(defaultLanguage='en', defaultAudioLanguage='en')
         body = {'snippet': snippet, 'status': {'privacyStatus': privacy,

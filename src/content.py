@@ -33,9 +33,9 @@ def metadata(kind, label, visual_style='cartoon'):
         tags = ['happy birthday', f'happy birthday {label}', 'birthday wishes']
         category = '24'
     elif kind == 'animal':
-        title = f'{label.title()} | {visual_style.title()} Animal Animation | {CHANNEL}'
-        description = f'An original animated illustration of a {label.lower()} in {visual_style} style, with gentle generated instrumental audio. This is illustrated animation, not live animal footage.'
-        tags = [label.lower(), 'animal animation', visual_style, 'animated animals']
+        title = f'{label.title()} | Playful Animal Moments | {CHANNEL}'
+        description = f'A compilation of real {label.lower()} footage selected from stock-video search results, edited with gentle instrumental music. Longer requests may repeat clips. Footage courtesy of Pexels and the credited contributors.'
+        tags = [label.lower(), 'animal videos', 'playful animals', 'real animals']
         category = '15'
     else:
         title = f'{label} | {CHANNEL}'

@@ -105,30 +105,22 @@ Official references:
 - https://developers.google.com/youtube/v3/docs/videos/insert
 - https://developers.google.com/youtube/v3/docs/thumbnails/set
 
-## Animal videos — use now
+## Real animal footage — automatic Pexels selection
 
-All four formats run through the same queue: birthday, rain, music, animal.
+The geometric animal renderer has been removed. Animal requests now search Pexels for the selected species playing, select at least two distinct landscape clips whose metadata indicates activity, trim and assemble them with instrumental background music, and create a thumbnail from the actual selected footage. A new GitHub secret PEXELS_API_KEY is required. Obtain it through https://www.pexels.com/api/ and paste it directly into GitHub repository Secrets. Do not share it or commit it.
 
-Add a tenth column J named exactly `Style`. Existing CSVs with seven, eight or nine columns remain supported. When adding Style, use all three optional headers in order: H Type, I Duration Seconds, J Style. Preserve all existing upload records.
+Set Type=animal, Name=cat/dog/rabbit/bird/fish/butterfly/elephant/lion, Style=real, Duration Seconds=30 (10–600 supported). Existing cartoon/pastel/neon/silhouette animal rows also use real footage after this update. They do not fall back to illustrations. If no matching clips or API key are available, the request fails before YouTube upload. Activity matching uses source metadata, not computer vision: swimming/flying/running may be selected, and playing cannot be guaranteed. Preview to check relevance.
 
-| Name (A) | Type (H) | Duration Seconds (I) | Style (J) |
-|---|---|---|---|
-| cat | animal | 30 | cartoon |
-| dog | animal | 30 | pastel |
-| bird | animal | 30 | neon |
-| fish | animal | 30 | silhouette |
+Clips are normalized to 1280×720 at 24 fps and assembled with generated music. Source audio is removed; videos are not claimed to contain authentic animal sounds. Requests longer than the assembled footage repeat the compilation. Source contributor names and Pexels links are included in the YouTube description and preview .sources.json artifact. Review Pexels terms and API rules; API limits apply. Using stock clips does not guarantee YouTube monetization eligibility.
 
-Set Status (B) to Pending and leave C–G empty for new requests. Name is the animal species, not a pet's personal name.
+Thumbnail retries use the original selected frame cached in .cache/animal-thumbnails. If it is no longer available, the thumbnail retry fails rather than using a frame from unrelated footage. Apply a thumbnail manually for that already-uploaded video if needed; never reset Uploaded to Pending just to fix a thumbnail.
 
-Supported species: cat, dog, rabbit, bird, fish, butterfly, elephant, lion. Case is ignored. Unsupported animals fail before upload rather than showing a different animal.
+Keep existing Uploaded rows and links unchanged; this update does not delete or replace videos already on YouTube. To make a replacement video, add a NEW Pending row and manage the old upload manually in YouTube Studio. Start in preview mode. Choose MADE_FOR_KIDS based on the actual target audience; it remains a global setting.
 
-Styles: cartoon (brand colors), pastel (soft light colors), silhouette (dark animal shapes), neon (bright colors on a dark background). Style currently applies only to animal videos; birthday/rain/music retain their existing branded designs. Blank animal Style defaults to cartoon.
-
-Animal videos are landscape 1280×720 illustrated animation at 12 fps, with movement, blinking or wing/tail motion depending on species, original generated instrumental background audio, no narration and no realistic animal sounds. Duration supports 10–600 seconds (default 60). There are no downloaded photos, stock videos, real wildlife clips or AI-generated realistic video in this version. No extra API key is required.
-
-The thumbnail shows the chosen species and style; upload titles and descriptions clearly label the videos as animation. Set MADE_FOR_KIDS accurately for your intended audience; animal cartoons can require a different audience decision than relaxation content. This starter uses one repository-wide setting, so process batches with the appropriate audience setting rather than mixing content that requires different settings.
-
-Run preview first and inspect the animal MP4/JPG files before enabling upload. Files are generated and uploaded automatically only after your YouTube authorization and GitHub permissions are configured.
+References:
+- https://www.pexels.com/api/documentation/
+- https://help.pexels.com/hc/en-us/articles/360042827333-Can-I-upload-Pexels-images-and-videos-to-YouTube
+- https://www.pexels.com/license/
 
 ## Upgrade from the previous Google voice edition
 

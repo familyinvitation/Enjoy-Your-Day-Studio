@@ -10,7 +10,7 @@ from .csv_queue import CsvQueue, QueueConflict
 from .voice import create_voice
 from .content import content_settings
 from .ambience import render_ambience
-from .animals import animal_options, render_animal
+from .stock_animals import animal_options, render_animal
 from .video import render, style
 from .youtube import YouTube
 from .thumbnail import create_thumbnail
