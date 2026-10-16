@@ -20,7 +20,7 @@ jobs:
   birthdays:
     if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 180
     env:
       GITHUB_TOKEN: ${{ github.token }}
       GITHUB_QUEUE_BRANCH: ${{ github.event.repository.default_branch }}
@@ -29,10 +29,11 @@ jobs:
       YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
       YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
       YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
+      COVERR_API_KEY: ${{ secrets.COVERR_API_KEY }}
       PIPER_MODEL_DIR: .cache/piper
       YOUTUBE_PRIVACY: ${{ vars.YOUTUBE_PRIVACY || 'private' }}
       MADE_FOR_KIDS: ${{ vars.MADE_FOR_KIDS }}
-      MAX_PER_RUN: '3'
+      MAX_PER_RUN: '1'
       UPLOADS_ENABLED: ${{ vars.UPLOADS_ENABLED || 'false' }}
       PREVIEW: ${{ inputs.preview }}
     steps:
@@ -53,6 +54,12 @@ jobs:
         with:
           path: .cache/piper
           key: piper-ljspeech-medium-c10ece1a-v1
+      - name: Cache animal thumbnails
+        uses: actions/cache@v4
+        with:
+          path: .cache/animal-thumbnails
+          key: animal-thumbnails-${{ github.run_id }}
+          restore-keys: animal-thumbnails-
       - name: Process queue
         shell: bash
         run: |
@@ -71,5 +78,6 @@ jobs:
           path: |
             output/*.mp4
             output/*.jpg
+            output/*.sources.json
           retention-days: 3
           if-no-files-found: warn
