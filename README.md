@@ -27,7 +27,7 @@ dog,Pending,,,,,,animal,30,pastel
 
 Open the file on GitHub → pencil icon (Edit) → append a row → Commit changes to the default branch. Do not remove completed rows. Do not edit the queue while a run is processing it. If you do, conditional writes protect your edits, but the workflow will stop and may require recovery.
 
-Birthday: longer vertical video with English female narration of personalized lyrics and repeated choruses (90-second minimum by default). Rain/music: landscape illustrated animation, no narration; 1800–7200 seconds (default 1800). Rain is digitally synthesized noise, not a natural field recording. Music is a simple original procedural instrumental, not a full AI song generator. Public repositories expose queue names and video links; use a private repository if desired.
+Birthday: longer vertical video with English female narration of a short personalized birthday greeting repeated over soft instrumental music (90-second minimum by default). Rain/music: landscape illustrated animation, no narration; 1800–7200 seconds (default 1800). Rain is digitally synthesized noise, not a natural field recording. Music is a simple original procedural instrumental, not a full AI song generator. Public repositories expose queue names and video links; use a private repository if desired.
 
 ## 3. Voice generation now uses Piper
 
@@ -130,7 +130,7 @@ Replace src/voice.py, src/main.py, src/config.py, requirements.txt and .github/w
 
 Birthday rows now use Duration Seconds (column I). Blank means a minimum of 90 seconds; choose 60–600. Example: `Amit,Pending,,,,,,birthday,120,` makes a personalized video at least two minutes long. Animal videos retain their 10–600 second limits; rain/music use 1800–7200 seconds.
 
-The supplied verses and chorus live in src/birthday_song.py. Every <Name> is replaced by the CSV name. Section headings are not spoken. The complete lyrics are narrated first; complete choruses then repeat until the audio reaches the requested minimum. Nothing is cut mid-line. The result can be longer than requested by up to one chorus plus a short outro. The final line you supplied was truncated; this version completes it as “May love and laughter always come your way!”
+The short greeting lives in src/birthday_song.py: Today’s your day, the candles glow; There’s someone special we all know; <Name>, let’s celebrate with you; With love and laughter all day through; Happy Birthday <Name>! Every <Name> is replaced by the CSV name. This complete greeting repeats with short pauses until the requested minimum duration is reached. Nothing is cut mid-line. Soft, cheerful instrumental music plays underneath.
 
 Piper is a speech engine: this is spoken birthday lyrics over instrumental music, not a sung vocal performance. True singing would need a separate singing model or a supplied licensed song recording. Background artwork and thumbnails continue to show Happy Birthday and the person's name; there are no synchronized lyric captions in this version.
 
@@ -153,3 +153,9 @@ This adapter uses Coverr's documented /videos endpoint with Bearer authenticatio
 For a new animal request, use cat,Pending,,,,,,animal,60,real. Keep Uploaded rows unchanged; use a NEW row for a replacement video. If an older unsuccessful request is Error or Paused and has no YouTube URL, set it Pending after fixing setup. Never reset Uploading/Needs Review without checking YouTube Studio first.
 
 Preview first. Metadata filtering checks animal/activity keywords and excludes explicitly flagged AI footage, but cannot prove that the animal is playing or that an unflagged clip is camera footage. Human review is recommended before the first public batch. Missing or unrecognized media fields cause a failure instead of a cartoon fallback. This update has fixture-based API tests; live use of your GitHub secret must be tested in Actions because it is not available in this chat runtime.
+
+## Diagnosing a failed row
+
+Failures now report the stage and a safe explanation in Error and Actions logs. The old generic billing/permissions message did not diagnose the cause. For Coverr, the logs include per-attempt result counts, and the Error cell distinguishes missing secrets, access errors and insufficient matching clips. Raw provider responses, API keys and signed media links are not printed.
+
+After installing this update, retry only a row whose Status is Error and YouTube URL is blank: set Status to Pending and run a NEW workflow (preview recommended first). Preview does not edit the CSV, so read its Process queue log for the new diagnostic. Leave Uploaded, Uploading and Needs Review rows unchanged until inspected in Studio.

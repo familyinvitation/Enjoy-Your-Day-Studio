@@ -12,8 +12,10 @@ class BirthdaySongTests(unittest.TestCase):
     def test_names_and_repeated_choruses(self):
         words='\n'.join(text for _,text in personalized_sections('Priya'))
         self.assertNotIn('<Name>',words)
-        self.assertGreaterEqual(words.count('Happy birthday, Priya'),3)
-        self.assertIn('Here’s to Priya',words)
+        self.assertEqual(words.count('Happy Birthday Priya!'),1)
+        self.assertIn('Priya, let’s celebrate with you,',words)
+        self.assertEqual(len(words.splitlines()),5)
+        self.assertNotIn('hooray',words)
     def test_duration_accepts_birthday_csv(self):
         self.assertEqual(content_settings(['Amit','','','','','','','birthday','120'])[2],120)
         for duration in ('0','59','601'):
