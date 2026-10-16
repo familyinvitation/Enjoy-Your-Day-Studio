@@ -61,7 +61,7 @@ def scene(kind, label, width=1280, height=720):
     return image
 
 
-def render_ambience(kind,label,job_id,output,duration=60,width=1280,height=720,fps=12):
+def _render_loop(kind,label,job_id,output,duration=20,width=1280,height=720,fps=12):
     output.parent.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory() as directory:
         audio = make_audio(kind,job_id,duration,Path(directory)/'audio.wav')
@@ -95,4 +95,20 @@ def render_ambience(kind,label,job_id,output,duration=60,width=1280,height=720,f
             if process.wait()!=0: raise RuntimeError('Ambience rendering failed')
         except BaseException:
             process.kill();process.wait();raise
+    return output
+
+
+def render_ambience(kind,label,job_id,output,duration=1800,width=1280,height=720,fps=12):
+    """Encode a short animated scene once, then loop it over full-length generated audio."""
+    if duration <= 30:
+        return _render_loop(kind,label,job_id,output,duration,width,height,fps)
+    output.parent.mkdir(parents=True,exist_ok=True)
+    with tempfile.TemporaryDirectory() as directory:
+        clip=Path(directory)/'scene.mp4'
+        audio=Path(directory)/'full-audio.wav'
+        _render_loop(kind,label,job_id,clip,20,width,height,fps)
+        make_audio(kind,job_id,duration,audio)
+        subprocess.run(['ffmpeg','-y','-loglevel','error','-stream_loop','-1','-i',str(clip),
+            '-i',str(audio),'-map','0:v:0','-map','1:a:0','-t',str(duration),
+            '-c:v','copy','-c:a','aac','-b:a','160k','-movflags','+faststart',str(output)],check=True)
     return output

@@ -5,6 +5,8 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.request import urlopen
 import shutil
+import tempfile
+from .birthday_song import personalized_sections, personalized_chorus
 
 VOICE = 'en_US-ljspeech-medium'
 BASE = 'https://huggingface.co/rhasspy/piper-voices/resolve/c10ece1aade47bb51c153c893d14e5bf8e5b7117/en/en_US/ljspeech/medium/'
@@ -34,13 +36,44 @@ def load_voice(model):
     return PiperVoice.load(model, use_cuda=False)
 
 
-def create_voice(name, message, path):
+def create_voice(name, message, path, target_seconds=None):
     model=ensure_voice()
     voice=load_voice(str(model))
     path.parent.mkdir(parents=True,exist_ok=True)
-    text=f'Happy Birthday {name}! {message} Enjoy your special day!'
-    with wave.open(str(path),'wb') as output:
-        voice.synthesize_wav(text,output)
+    if target_seconds is None:
+        text=f'Happy Birthday {name}! {message} Enjoy your special day!'
+        with wave.open(str(path),'wb') as output:
+            voice.synthesize_wav(text,output)
+    else:
+        if not 1 <= target_seconds <= 600:
+            raise ValueError('Target duration must be 1–600 seconds')
+        # Keep every verse intact, then add complete choruses until the target is met.
+        text='\n\n'.join(words for _,words in personalized_sections(name))
+        with tempfile.TemporaryDirectory() as directory:
+            full=Path(directory)/'full.wav'
+            chorus=Path(directory)/'chorus.wav'
+            with wave.open(str(full),'wb') as output:
+                voice.synthesize_wav(text,output)
+            with wave.open(str(chorus),'wb') as output:
+                voice.synthesize_wav(personalized_chorus(name),output)
+            with wave.open(str(full),'rb') as source, wave.open(str(chorus),'rb') as repeat:
+                params=source.getparams()
+                if (params.nchannels,params.sampwidth,params.framerate)!=(repeat.getnchannels(),repeat.getsampwidth(),repeat.getframerate()):
+                    raise RuntimeError('Inconsistent Piper audio format')
+                body=source.readframes(params.nframes)
+                refrain=repeat.readframes(repeat.getnframes())
+                frame_bytes=params.nchannels*params.sampwidth
+                if not body or not refrain:
+                    raise RuntimeError('Piper produced empty lyrics')
+                pause=bytes(int(params.framerate*.7)*frame_bytes)
+                written=params.nframes
+                with wave.open(str(path),'wb') as output:
+                    output.setparams(params)
+                    output.writeframes(body)
+                    while written/params.framerate < target_seconds:
+                        output.writeframes(pause);output.writeframes(refrain)
+                        written+=(len(pause)+len(refrain))//frame_bytes
+
     with wave.open(str(path),'rb') as output:
         if output.getnframes()==0 or output.getnchannels()!=1 or output.getsampwidth()!=2:
             raise RuntimeError('Piper produced an invalid narration WAV')

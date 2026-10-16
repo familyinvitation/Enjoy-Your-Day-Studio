@@ -12,17 +12,24 @@ def content_settings(row):
     label = validate_name(cells[0]) if kind == 'birthday' else ' '.join(cells[0].split())
     if not label or len(label) > 70 or any(ord(c) < 32 or c in '<>' for c in label):
         raise ValueError('Use a label of 1–70 characters without angle brackets or control characters')
-    duration = 60
-    if kind != 'birthday':
-        duration = int(cells[8] or '60')
-        if not 10 <= duration <= 600:
-            raise ValueError('Video duration must be 10–600 seconds')
+    minimum, maximum, default = {
+        'birthday': (60, 600, 90),
+        'rain': (1800, 7200, 1800),
+        'music': (1800, 7200, 1800),
+        'animal': (10, 600, 60),
+    }[kind]
+    duration = int(cells[8] or str(default))
+    # Old sample rows used 60 seconds: automatically upgrade shorter rain/music requests.
+    if kind in ('rain', 'music') and 0 < duration < minimum:
+        duration = minimum
+    if not minimum <= duration <= maximum:
+        raise ValueError(f'{kind} duration must be {minimum}–{maximum} seconds')
     return kind, label, duration
 
 def metadata(kind, label, visual_style='cartoon'):
     if kind == 'birthday':
         title = f'Happy Birthday {label} | {CHANNEL}'
-        description = f'Happy Birthday {label}! Wishing you happiness, laughter and a wonderful year ahead.'
+        description = f'Happy Birthday {label}! Personalized birthday lyrics read aloud over instrumental background music, with repeated birthday choruses. Wishing you happiness, laughter and a wonderful year ahead.'
         tags = ['happy birthday', f'happy birthday {label}', 'birthday wishes']
         category = '24'
     elif kind == 'animal':

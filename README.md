@@ -19,15 +19,15 @@ The first seven columns are required; Type, Duration Seconds and Style are optio
 ```csv
 Name,Status,YouTube URL,Uploaded Date,Job ID,Updated At,Error,Type,Duration Seconds,Style
 Amit,Pending,,,,,,birthday,,
-Gentle Rain,Pending,,,,,,rain,60,
-Peaceful Moments,Pending,,,,,,music,60,
+Gentle Rain,Pending,,,,,,rain,1800,
+Peaceful Moments,Pending,,,,,,music,1800,
 cat,Pending,,,,,,animal,30,cartoon
 dog,Pending,,,,,,animal,30,pastel
 ```
 
 Open the file on GitHub → pencil icon (Edit) → append a row → Commit changes to the default branch. Do not remove completed rows. Do not edit the queue while a run is processing it. If you do, conditional writes protect your edits, but the workflow will stop and may require recovery.
 
-Birthday: short vertical video with English female narration. Rain/music: landscape illustrated animation, no narration; 10–600 seconds (default 60). Rain is digitally synthesized noise, not a natural field recording. Music is a simple original procedural instrumental, not a full AI song generator. Public repositories expose queue names and video links; use a private repository if desired.
+Birthday: longer vertical video with English female narration of personalized lyrics and repeated choruses (90-second minimum by default). Rain/music: landscape illustrated animation, no narration; 1800–7200 seconds (default 1800). Rain is digitally synthesized noise, not a natural field recording. Music is a simple original procedural instrumental, not a full AI song generator. Public repositories expose queue names and video links; use a private repository if desired.
 
 ## 3. Voice generation now uses Piper
 
@@ -78,7 +78,7 @@ Actions → Enjoy Your Day Studio videos → Run workflow → leave preview chec
 
 Then set UPLOADS_ENABLED=true and manually run with preview unchecked. Confirm private video URLs appear in the repository's CSV. The file visible in the workflow checkout may be older: refresh the CSV on GitHub to see API commits.
 
-The workflow also runs on user commits to names-template.csv and hourly at minute 17, on the default branch only. Its own status commits use GITHUB_TOKEN, so they do not trigger a workflow loop. Scheduled jobs can be delayed and public repository schedules may be disabled after 60 days of inactivity. Maximum three new videos and three thumbnail retries per run. You can edit MAX_PER_RUN in the workflow (1–10).
+The workflow also runs on user commits to names-template.csv and hourly at minute 17, on the default branch only. Its own status commits use GITHUB_TOKEN, so they do not trigger a workflow loop. Scheduled jobs can be delayed and public repository schedules may be disabled after 60 days of inactivity. Maximum one new video and one thumbnail retry per run. You can edit MAX_PER_RUN in the workflow (1–10).
 
 YouTube may restrict public uploads or Shorts thumbnails based on API project/channel eligibility. Test with your actual account. Setting public does not override YouTube restrictions. This code does not update your channel profile, banner, description or playlists; apply the supplied branding images in YouTube Studio yourself.
 
@@ -133,3 +133,21 @@ Run preview first and inspect the animal MP4/JPG files before enabling upload. F
 ## Upgrade from the previous Google voice edition
 
 Replace src/voice.py, src/main.py, src/config.py, requirements.txt and .github/workflows/birthday-upload.yml (or upload this entire updated project while preserving your CSV data). Keep the four existing YouTube secrets. No Google billing activation is required. Run preview with a single Pending birthday row first, inspect the MP4 narration, then enable uploads. GitHub processing and YouTube quotas still apply; free speech generation does not mean unlimited free hosting or uploads.
+
+## Longer birthday videos with your lyrics
+
+Birthday rows now use Duration Seconds (column I). Blank means a minimum of 90 seconds; choose 60–600. Example: `Amit,Pending,,,,,,birthday,120,` makes a personalized video at least two minutes long. Animal videos retain their 10–600 second limits; rain/music use 1800–7200 seconds.
+
+The supplied verses and chorus live in src/birthday_song.py. Every <Name> is replaced by the CSV name. Section headings are not spoken. The complete lyrics are narrated first; complete choruses then repeat until the audio reaches the requested minimum. Nothing is cut mid-line. The result can be longer than requested by up to one chorus plus a short outro. The final line you supplied was truncated; this version completes it as “May love and laughter always come your way!”
+
+Piper is a speech engine: this is spoken birthday lyrics over instrumental music, not a sung vocal performance. True singing would need a separate singing model or a supplied licensed song recording. Background artwork and thumbnails continue to show Happy Birthday and the person's name; there are no synchronized lyric captions in this version.
+
+Replace code files and keep existing CSV records/secrets. Completed uploads are unchanged. Use a new Pending row to make a new longer version. Preview first; longer renders use more GitHub runner time. The ZIP's CSV is a sample, not a replacement for your upload history.
+
+## Rain and relaxing music: minimum 30 minutes
+
+Rain and music now default to 1800 seconds (30 minutes). Column I Duration Seconds accepts 1800–7200 seconds for these types. Any positive value below 1800 (including old sample rows with 60) is automatically raised to 1800. Zero, negative or invalid values fail validation. Examples: 1800 = 30 minutes, 3600 = 1 hour, 7200 = 2 hours. Birthday and animal duration rules are unchanged.
+
+The renderer encodes a short illustrated animation once, loops its visual track, and generates the audio for the full requested duration with opening/closing fades. This reduces encoding time and does not repeat the short clip's faded audio. The visual loop may have a visible reset; this version uses a repeating illustrated scene rather than unique footage throughout. The generated music uses a repeating chord progression; rain remains synthetic noise.
+
+Preview also generates the full requested 30-minute-or-longer video. Workflow batches now process one new video per run, with a 180-minute timeout. GitHub runner/storage quotas and YouTube limits still apply. Your channel must support uploads longer than 15 minutes. Test a private upload first. Previously Uploaded rows are not recreated.

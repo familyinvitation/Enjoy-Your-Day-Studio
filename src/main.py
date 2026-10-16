@@ -77,7 +77,7 @@ def run(preview=False):
                 if kind == 'birthday':
                     audio=Path(directory)/'voice.wav'
                     _, message=style(job_id)
-                    create_voice(name,message,audio)
+                    create_voice(name,message,audio,target_seconds=duration)
                     render(name,job_id,audio,output)
                 elif kind == 'animal':
                     render_animal(name.lower(),visual_style,job_id,output,duration)

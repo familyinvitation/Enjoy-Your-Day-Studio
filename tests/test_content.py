@@ -6,9 +6,9 @@ from test_queue import FakeSheet
 
 class ContentTests(unittest.TestCase):
     def test_legacy_birthday(self):
-        self.assertEqual(content_settings(['Amit']*1),('birthday','Amit',60))
+        self.assertEqual(content_settings(['Amit']*1),('birthday','Amit',90))
     def test_invalid_type_and_duration(self):
-        for kind,duration in [('unknown','60'),('rain','0'),('music','601')]:
+        for kind,duration in [('unknown','60'),('rain','0'),('music','7201')]:
             with self.assertRaises(ValueError):
                 content_settings(['Rain','','','','','','',kind,duration])
     def test_metadata_is_format_specific(self):
