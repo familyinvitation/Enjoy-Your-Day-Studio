@@ -1,4 +1,5 @@
 """Content selection; the original seven-column birthday queue remains valid."""
+from .errors import SafeError
 from .config import validate_name
 
 CHANNEL = 'Enjoy Your Day Studio'
@@ -8,10 +9,10 @@ def content_settings(row):
     cells = list(row) + [''] * 10
     kind = cells[7].strip().lower() or 'birthday'
     if kind not in ('birthday', 'rain', 'music', 'animal'):
-        raise ValueError('Type must be birthday, rain, music or animal')
+        raise SafeError('Type must be birthday, rain, music or animal')
     label = validate_name(cells[0]) if kind == 'birthday' else ' '.join(cells[0].split())
     if not label or len(label) > 70 or any(ord(c) < 32 or c in '<>' for c in label):
-        raise ValueError('Use a label of 1–70 characters without angle brackets or control characters')
+        raise SafeError('Use a label of 1–70 characters without angle brackets or control characters')
     minimum, maximum, default = {
         'birthday': (60, 600, 90),
         'rain': (1800, 7200, 1800),
@@ -23,7 +24,7 @@ def content_settings(row):
     if kind in ('rain', 'music') and 0 < duration < minimum:
         duration = minimum
     if not minimum <= duration <= maximum:
-        raise ValueError(f'{kind} duration must be {minimum}–{maximum} seconds')
+        raise SafeError(f'{kind} duration must be {minimum}–{maximum} seconds')
     return kind, label, duration
 
 def metadata(kind, label, visual_style='cartoon'):

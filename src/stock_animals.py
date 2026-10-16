@@ -1,4 +1,5 @@
 """Real animal footage from Coverr, assembled into a branded compilation."""
+from .errors import SafeError
 import hashlib
 import json
 import random
@@ -23,7 +24,7 @@ PLAY=('playing','play','playful','fetch','toy','toys','chasing','running','hoppi
 
 def animal_options(row):
     animal=row[0].strip().lower()
-    if animal not in ANIMALS:raise ValueError('Supported animals: '+', '.join(ANIMALS))
+    if animal not in ANIMALS:raise SafeError('Supported animals: '+', '.join(ANIMALS))
     # Old cartoon/pastel rows now select real footage too; no geometric fallback.
     return animal,'real'
 
@@ -54,7 +55,7 @@ def select_clips(videos,animal,job_id):
         chosen.append({'id':identifier,'page':page,'creator':'Coverr', 'download':download})
     random.Random(job_id).shuffle(chosen)
     if len(chosen)<2:
-        raise ValueError('Coverr returned fewer than two matching active-animal clips; no fallback video was uploaded')
+        raise SafeError(f'Coverr search returned {len(videos)} records but only {len(chosen)} usable active-{animal} clips. At least two are required; try another animal or query.')
     return chosen[:8]
 
 def allowed_media_url(url):
@@ -69,15 +70,17 @@ def coverr_request(query):
     with urlopen(request,timeout=60) as response:
         data=json.load(response)
     if not isinstance(data,dict) or not isinstance(data.get('hits'),list):
-        raise ValueError('Unexpected Coverr API response; expected hits list')
+        raise SafeError('Coverr response format did not contain the expected hits list. The adapter may need an API schema update.')
     return data['hits']
 
 def search_clips(animal,job_id):
     videos=[]
     # At most three search requests per animal job, with no broad unrelated fallback.
-    queries=[f'{animal} playing',f'{animal} playful',f'{animal} running']
+    queries=[f'{animal} playing',f'{animal} playful',animal]
     for query in queries:
-        videos.extend(coverr_request(query))
+        hits=coverr_request(query)
+        print(f'Coverr search for {animal}: {len(hits)} records on attempt {queries.index(query)+1}.')
+        videos.extend(hits)
         try:
             return select_clips(videos,animal,job_id)
         except ValueError:
@@ -86,7 +89,7 @@ def search_clips(animal,job_id):
 
 def download_clip(url,path):
     if not allowed_media_url(url):
-        raise ValueError('Unexpected Coverr download host')
+        raise SafeError('Unexpected Coverr download host')
     # Use mp4_download directly, as required by Coverr download tracking.
     # Never pass API authorization to the media CDN or save signed URLs in credits.
     with urlopen(url,timeout=90) as response,path.open('wb') as target:
@@ -95,7 +98,7 @@ def download_clip(url,path):
             chunk=response.read(1024*1024)
             if not chunk:break
             total+=len(chunk)
-            if total>250*1024*1024:raise ValueError('Source clip too large')
+            if total>250*1024*1024:raise SafeError('Source clip too large')
             target.write(chunk)
 
 def cached_thumbnail(job_id):
@@ -116,7 +119,7 @@ def save_thumbnail(animal,video,path):
 def real_thumbnail(animal,job_id,path):
     cached=cached_thumbnail(job_id)
     if not cached.exists():
-        raise ValueError('Original footage thumbnail is not cached; do not substitute a different animal frame')
+        raise SafeError('Original footage thumbnail is not cached; do not substitute a different animal frame')
     path.parent.mkdir(parents=True,exist_ok=True)
     shutil.copyfile(cached,path)
     return path

@@ -6,6 +6,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from .config import validate_name
+from .errors import safe_error
 from .csv_queue import CsvQueue, QueueConflict
 from .voice import create_voice
 from .content import content_settings
@@ -37,7 +38,7 @@ def finish_thumbnail(sheet, youtube, number, row):
     except QueueConflict:
         raise
     except Exception as exc:
-        row[6]=f'Thumbnail pending: {type(exc).__name__}. Check channel eligibility/permissions. Do not reset video to Pending.'
+        row[6]='Thumbnail pending: '+safe_error(exc)+' Do not reset the video to Pending.'
         row[5]=now()
         sheet.write(number, row)
         print(f'Thumbnail needs attention for row {number} ({type(exc).__name__}).', file=sys.stderr)
@@ -65,6 +66,7 @@ def run(preview=False):
             continue
         processed += 1
         uploading = False
+        stage = 'input validation'
         try:
             kind, name, duration = content_settings(row)
             visual_style = animal_options(row)[1] if kind == 'animal' else 'cartoon'
@@ -72,6 +74,7 @@ def run(preview=False):
             if not preview:
                 row[4]=job_id; row[1]='Processing'; row[5]=now(); row[6]=''
                 sheet.write(number,row)
+            stage = f'{kind} generation'
             with tempfile.TemporaryDirectory() as directory:
                 output=Path('output')/f'{job_id}.mp4' if preview else Path(directory)/'video.mp4'
                 if kind == 'birthday':
@@ -83,17 +86,21 @@ def run(preview=False):
                     render_animal(name.lower(),visual_style,job_id,output,duration)
                 else:
                     render_ambience(kind,name,job_id,output,duration)
+                stage = 'thumbnail generation'
                 thumbnail = output.with_suffix('.jpg')
                 create_thumbnail(name,job_id,thumbnail,content_kind=kind,visual_style=visual_style)
                 if preview:
                     print(f'Preview rendered for row {number}; CSV unchanged.')
                     continue
+                stage = 'saving upload state'
                 row[1]='Uploading'; row[5]=now(); sheet.write(number,row)
                 uploading=True
+                stage = 'YouTube upload'
                 video_id=youtube.upload(name,job_id,output,content_kind=kind,visual_style=visual_style)
                 row[1]='Uploaded'; row[2]=f'https://www.youtube.com/watch?v={video_id}'
                 row[3]=now(); row[5]=now(); row[6]='Thumbnail pending: awaiting upload.'
                 # If this write fails, preserve Uploading and never automatically upload again.
+                stage = 'saving uploaded URL'
                 sheet.write(number,row)
                 uploading=False
                 print(f'Uploaded row {number}: {row[2]}')
@@ -104,10 +111,10 @@ def run(preview=False):
         except Exception as exc:
             failures += 1
             # Do not print raw provider errors which may include credential details.
-            print(f'Row {number} failed ({type(exc).__name__}); see CSV recovery instructions.',file=sys.stderr)
+            print(f'Row {number} failed during {stage}: {safe_error(exc)}',file=sys.stderr)
             if not preview:
                 row[1]='Uploaded' if row[2] else ('Needs Review' if uploading else 'Error')
-                row[5]=now(); row[6]=('Thumbnail pending: ' if row[2] else '')+f'{type(exc).__name__}: '+('Check YouTube before retrying; upload may have succeeded.' if uploading else 'Generation or CSV operation failed. Check API setup, billing and permissions.')
+                row[5]=now(); row[6]=('Thumbnail pending: ' if row[2] else '')+f'{stage}: '+safe_error(exc)+(' Check YouTube before retrying; upload may have succeeded.' if uploading else '')
                 try:
                     sheet.write(number,row)
                 except Exception:
