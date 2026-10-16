@@ -6,4 +6,4 @@ cat,Uploaded,https://www.youtube.com/watch?v=kQzmNqITJ1w,2026-10-16T01:22:01.339
 dog,Uploaded,https://www.youtube.com/watch?v=BEjoItEq8sc,2026-10-16T01:22:10.665878+00:00,de93250c-6bd1-4597-966d-96bedd13f4fa,2026-10-16T01:22:13.547826+00:00,,animal,30,pastel
 bird,Uploaded,https://www.youtube.com/watch?v=2nUM5TcYJls,2026-10-16T01:22:19.909750+00:00,275ac273-11b6-42fe-ae60-c27fb7de3400,2026-10-16T01:22:22.973443+00:00,,animal,30,neon
 fish,Error,,,c84bd852-329d-43fe-8398-fbbaacbc946c,2026-10-16T01:47:11.896089+00:00,"ValueError: Generation or CSV operation failed. Check API setup, billing and permissions.",animal,60,real
-Priya,pending,,,,,,birthday,90,
+Priya,Processing,,,3e170a8e-a648-45b9-8243-6f2501459707,2026-10-16T02:01:41.873874+00:00,,birthday,90,
