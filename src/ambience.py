@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 from .video import centered
 from .content import CHANNEL, TAGLINE
+from .audio_master import master_wav
 
 
 def make_audio(kind, job_id, duration, path):
@@ -41,7 +42,7 @@ def make_audio(kind, job_id, duration, path):
                 samples = .18*((1-blend)*tone(chords[current])+blend*tone(chords[(current+1)%4]))
             envelope = np.minimum(1, t/2)*np.minimum(1, (duration-t)/2)
             wav.writeframes((np.clip(samples*envelope,-1,1)*32767).astype('<i2').tobytes())
-    return path
+    return master_wav(path, target=-22 if kind == 'rain' else -20)
 
 
 def scene(kind, label, width=1280, height=720):

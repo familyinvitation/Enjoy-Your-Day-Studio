@@ -37,6 +37,10 @@ def load_voice(model):
 
 
 def create_voice(name, message, path, target_seconds=None):
+    from .prepared_vocals import prepared_vocal
+    supplied = prepared_vocal(name, path, target_seconds)
+    if supplied is not None:
+        return supplied
     model=ensure_voice()
     voice=load_voice(str(model))
     path.parent.mkdir(parents=True,exist_ok=True)

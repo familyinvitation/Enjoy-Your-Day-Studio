@@ -6,6 +6,7 @@ import wave
 from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from .audio_mix import birthday_mix
 
 MESSAGES = ['Wishing you joy and a wonderful year ahead!',
             'May your day be filled with smiles and happy memories!',
@@ -40,26 +41,15 @@ def render(name, job_id, audio, output, width=1080, height=1920, fps=24, duratio
     if duration is None:
         with wave.open(str(audio)) as wav:
             duration = max(12, wav.getnframes()/wav.getframerate()+2)
-    # Original pentatonic tune, synthesized locally at low volume.
+    from .birthday_music import prepare_music
     music = output.parent / (output.stem + '-music.wav')
     output.parent.mkdir(parents=True, exist_ok=True)
-    rate = 22050
-    samples = np.arange(int(duration*rate))/rate
-    melody = np.zeros_like(samples)
-    notes = [523.25, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33, 523.25]
-    for beat in range(math.ceil(duration/.5)):
-        start = beat*.5
-        mask = (samples >= start) & (samples < start+.45)
-        local = samples[mask]-start
-        melody[mask] = .07*np.sin(2*np.pi*notes[(beat+seed)%len(notes)]*local)*np.sin(np.pi*local/.45)**2
-    with wave.open(str(music),'wb') as wav:
-        wav.setnchannels(1); wav.setsampwidth(2); wav.setframerate(rate)
-        wav.writeframes((melody*32767).astype('<i2').tobytes())
+    prepare_music(music, duration)
     particles = [(rng.random(), rng.random(), rng.uniform(.05,.15), rng.uniform(3,9)) for _ in range(85)]
     output.parent.mkdir(parents=True, exist_ok=True)
     cmd = ['ffmpeg','-y','-loglevel','error','-f','rawvideo','-vcodec','rawvideo','-pix_fmt','rgb24',
            '-s',f'{width}x{height}','-r',str(fps),'-i','pipe:0','-i',str(audio),'-i',str(music),
-           '-filter_complex','[1:a]apad[voice];[voice][2:a]amix=inputs=2:duration=longest:normalize=0[a]',
+           '-filter_complex',birthday_mix(),
            '-map','0:v:0','-map','[a]','-t',str(duration),'-c:v','libx264',
            '-preset','fast','-crf','21','-pix_fmt','yuv420p','-c:a','aac','-b:a','192k',
            '-movflags','+faststart',str(output)]

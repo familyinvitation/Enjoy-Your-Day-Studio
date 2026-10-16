@@ -159,3 +159,52 @@ Preview first. Metadata filtering checks animal/activity keywords and excludes e
 Failures now report the stage and a safe explanation in Error and Actions logs. The old generic billing/permissions message did not diagnose the cause. For Coverr, the logs include per-attempt result counts, and the Error cell distinguishes missing secrets, access errors and insufficient matching clips. Raw provider responses, API keys and signed media links are not printed.
 
 After installing this update, retry only a row whose Status is Error and YouTube URL is blank: set Status to Pending and run a NEW workflow (preview recommended first). Preview does not edit the CSV, so read its Process queue log for the new diagnostic. Leave Uploaded, Uploading and Needs Review rows unchanged until inspected in Studio.
+
+
+## Clearer birthday background music
+
+Birthday videos now use an original cheerful arrangement with melody, chords,
+and bass. Voice loudness is normalized; the music dips during speech and returns
+between phrases. This improves accompaniment, not Piper's spoken voice.
+
+An optional prepared OpenMusic instrumental can be placed at
+`assets/music/birthday.wav` (or `.mp3` / `.ogg`). The workflow loops, normalizes,
+and fades that recording automatically. No AI model, API, or paid service is
+needed at video-generation time. No generated OpenMusic track is included.
+See assets/music/README.md for details.
+
+
+## Audio mastering adapted from The Muser
+
+All generated rain, relaxing music, and animal accompaniment now receive
+measured two-pass loudness normalization. Birthday accompaniment receives the
+same treatment before voice mixing. Targets: rain -22 LUFS, relaxing/animal
+music -20 LUFS, birthday background -23 LUFS, with a -2 dBTP normalization limit.
+This balances loudness; it does not create new instruments or human singing.
+Silent or unmeasurable tracks stop generation instead of uploading silent audio.
+This uses existing FFmpeg, with no paid API, GPU, or new Python dependencies.
+Two audio-processing passes add processing time. Source and MIT notice are in
+THIRD_PARTY_NOTICES.md and licenses/the-muser-MIT.txt.
+
+
+## Prepared singing recordings (no model required in Actions)
+
+For a CSV Name of Amit, add a vocal-only recording at assets/vocals/Amit.wav
+(or .mp3/.ogg). The name and case must match exactly. This automatically replaces
+Piper for that name, normalizes the recording, and repeats complete performances
+with short pauses to meet the selected duration. Background accompaniment remains.
+Without a matching recording, Piper still speaks. No singing recordings or
+SoulX-Singer models are bundled. See assets/vocals/README.md.
+
+
+## Vocal effects and separate mixing controls
+
+assets/audio-settings.json controls birthday voice/music balance. Set
+voice_gain_db and music_gain_db between -12 and +6 (0 leaves the normalized
+level unchanged). Set vocal_reverb to true for a subtle echo effect; default
+false keeps speech dry. Vocal high-pass filtering and gentle compression run
+automatically before loudness normalization. These effects polish audio;
+they do not turn speech into singing. This adapts AICoverGen's effects/mixing
+approach using existing FFmpeg without adding its GPU model dependencies.
+Rain, relaxing music, and animal audio retain their category-specific mastering;
+these vocal controls apply only to birthday videos.
